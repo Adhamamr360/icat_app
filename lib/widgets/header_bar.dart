@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../main.dart' show authState;      // simple global flag
+import '../main.dart' show authState; // simple global flag
+import '../services/auth_service.dart'; // to access logout
 
 class HeaderBar extends StatelessWidget {
   const HeaderBar({super.key});
@@ -11,40 +12,45 @@ class HeaderBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text('iCAT',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          const Text(
+            'iCAT',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
 
           // ­­­── NAV LINKS ­­­­­­­­­­­­­­­­­­
-          Row(children: [
-            ValueListenableBuilder<bool>(
-              valueListenable: authState,
-              builder: (_, loggedIn, __) => _NavBtn(
-                label: 'Home',
-                route: loggedIn ? '/dashboard' : '/landing',
+          Row(
+            children: [
+              ValueListenableBuilder<bool>(
+                valueListenable: authState,
+                builder: (_, loggedIn, __) => _NavBtn(
+                  label: 'Home',
+                  route: loggedIn ? '/dashboard' : '/landing',
+                ),
               ),
-            ),
-            _NavBtn(label: 'Features', route: '/features'),
-            _NavBtn(label: 'Pricing', route: '/pricing'),
-            const SizedBox(width: 8),
+              _NavBtn(label: 'Features', route: '/features'),
+              _NavBtn(label: 'Pricing', route: '/pricing'),
+              const SizedBox(width: 8),
 
-            // ­­­── LOGIN / SIGN-OUT ­­­­­­­­­
-            ValueListenableBuilder<bool>(
-              valueListenable: authState,
-              builder: (_, loggedIn, __) => ElevatedButton(
-                onPressed: () {
-                  if (loggedIn) {
-                    // sign out
-                    authState.value = false;
-                    Navigator.pushNamedAndRemoveUntil(
-                        context, '/landing', (r) => false);
-                  } else {
-                    Navigator.pushNamed(context, '/login');
-                  }
-                },
-                child: Text(loggedIn ? 'Sign out' : 'Login'),
+              // ­­­── LOGIN / SIGN-OUT ­­­­­­­­­
+              ValueListenableBuilder<bool>(
+                valueListenable: authState,
+                builder: (_, loggedIn, __) => ElevatedButton(
+                  onPressed: () async {
+                    if (loggedIn) {
+                      // Proper logout via AuthService
+                      await AuthService.logout();
+                      authState.value = false;
+                      Navigator.pushNamedAndRemoveUntil(
+                          context, '/landing', (r) => false);
+                    } else {
+                      Navigator.pushNamed(context, '/login');
+                    }
+                  },
+                  child: Text(loggedIn ? 'Sign out' : 'Login'),
+                ),
               ),
-            ),
-          ]),
+            ],
+          ),
         ],
       ),
     );
@@ -54,9 +60,12 @@ class HeaderBar extends StatelessWidget {
 class _NavBtn extends StatelessWidget {
   final String label;
   final String route;
+
   const _NavBtn({required this.label, required this.route});
 
   @override
-  Widget build(BuildContext context) =>
-      TextButton(onPressed: () => Navigator.pushNamed(context, route), child: Text(label));
+  Widget build(BuildContext context) => TextButton(
+    onPressed: () => Navigator.pushNamed(context, route),
+    child: Text(label),
+  );
 }
